@@ -264,6 +264,7 @@ class MarketDataServiceKraken : public MarketDataService {
         std::string queryString;
         const std::map<std::string, std::string> param = request.getFirstParamWithDefault();
         this->appendSymbolId(queryString, symbolId, "pair");
+        std::cout << "symbolId: " << symbolId << "\n";
         for(const auto& elem : param)
         {
            std::cout << "const auto& elem : param: " << elem.first << " " << elem.second << "\n";
