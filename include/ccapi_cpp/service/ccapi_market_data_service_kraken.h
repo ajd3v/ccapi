@@ -264,6 +264,7 @@ class MarketDataServiceKraken : public MarketDataService {
         std::string queryString;
         const std::map<std::string, std::string> param = request.getFirstParamWithDefault();
         this->appendSymbolId(queryString, symbolId, "pair");
+        this->appendParam(queryString, param);
         req.target(target + "?" + queryString);
       } break;
       case Request::Operation::GET_INSTRUMENT: {
@@ -286,6 +287,8 @@ class MarketDataServiceKraken : public MarketDataService {
   void extractInstrumentInfo(Element& element, const rj::Value& x) {
     element.insert(CCAPI_BASE_ASSET, x["base"].GetString());
     element.insert(CCAPI_QUOTE_ASSET, x["quote"].GetString());
+    element.insert("ALTNAME", x["altname"].GetString());
+    element.insert("WSNAME", x["wsname"].GetString());
     int pairDecimals = std::stoi(x["pair_decimals"].GetString());
     if (pairDecimals > 0) {
       element.insert(CCAPI_ORDER_PRICE_INCREMENT, "0." + std::string(pairDecimals - 1, '0') + "1");
@@ -339,7 +342,7 @@ class MarketDataServiceKraken : public MarketDataService {
         for (auto itr = document["result"].MemberBegin(); itr != document["result"].MemberEnd(); ++itr) {
           Element element;
           this->extractInstrumentInfo(element, itr->value);
-          element.insert(CCAPI_INSTRUMENT, itr->name.GetString());
+          element.insert(CCAPI_INSTRUMENT, itr->value["altname"].GetString());
           elementList.push_back(element);
         }
         message.setElementList(elementList);
