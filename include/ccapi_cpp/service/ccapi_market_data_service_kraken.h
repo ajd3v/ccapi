@@ -264,13 +264,12 @@ class MarketDataServiceKraken : public MarketDataService {
         std::string queryString;
         const std::map<std::string, std::string> param = request.getFirstParamWithDefault();
         this->appendSymbolId(queryString, symbolId, "pair");
-        std::cout << "symbolId: " << symbolId << "\n";
-        for(const auto& elem : param)
-        {
-           std::cout << "const auto& elem : param: " << elem.first << " " << elem.second << "\n";
-        }
+        // for(const auto& elem : param)
+        // {
+        //    std::cout << "const auto& elem : param: " << elem.first << " " << elem.second << "\n";
+        // }
         this->appendParam(queryString, param);
-        std::cout << "query: " << target + "?" + queryString << std::endl;
+        // std::cout << "query: " << target + "?" + queryString << std::endl;
         req.target(target + "?" + queryString);
       } break;
       case Request::Operation::GET_INSTRUMENT: {
@@ -351,7 +350,7 @@ class MarketDataServiceKraken : public MarketDataService {
         for (auto itr = document["result"].MemberBegin(); itr != document["result"].MemberEnd(); ++itr) {
           Element element;
           this->extractInstrumentInfo(element, itr->value);
-          element.insert(CCAPI_INSTRUMENT, request.getInstrument());
+          element.insert(CCAPI_INSTRUMENT, itr->name.GetString());
           elementList.push_back(element);
         }
         message.setElementList(elementList);
