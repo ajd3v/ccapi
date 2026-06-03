@@ -283,6 +283,10 @@
 #define CCAPI_CLOSE_PRICE "CLOSE_PRICE"
 #endif
 
+#ifndef CCAPI_CLOSE_VOLUME
+#define CCAPI_CLOSE_VOLUME "CLOSE_VOLUME"
+#endif
+
 #ifndef CCAPI_VOLUME
 #define CCAPI_VOLUME "VOLUME"
 #endif

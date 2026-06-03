@@ -19,6 +19,7 @@ class MarketDataServiceKraken : public MarketDataService {
     this->getRecentTradesTarget = "/0/public/Trades";
     this->getInstrumentTarget = "/0/public/AssetPairs";
     this->getInstrumentsTarget = "/0/public/AssetPairs";
+    this->getTickersTarget = "/0/public/Ticker";
     this->shouldAlignSnapshot = true;
   }
 
@@ -335,6 +336,11 @@ class MarketDataServiceKraken : public MarketDataService {
         auto target = this->getInstrumentsTarget;
         req.target(target);
       } break;
+      case Request::Operation::GET_TICKERS: {
+        req.method(http::verb::get);
+        auto target = this->getTickersTarget;
+        req.target(target);
+      } break;
       default:
         this->convertRequestForRestCustom(req, request, now, symbolId, credential);
     }
@@ -354,6 +360,20 @@ class MarketDataServiceKraken : public MarketDataService {
     int lotDecimals = std::stoi(x["lot_decimals"].GetString());
     element.insert(CCAPI_ORDER_QUANTITY_INCREMENT, "0." + std::string(lotDecimals - 1, '0') + "1");
     element.insert(CCAPI_ORDER_QUANTITY_MIN, x["ordermin"].GetString());
+  }
+
+  void extractTickerInfo(Element& element, const rj::Value& x) {
+    element.insert(CCAPI_BEST_ASK_N_PRICE, x["a"][0].GetString());
+    element.insert(CCAPI_BEST_ASK_N_SIZE,  x["a"][2].GetString());
+    element.insert(CCAPI_BEST_BID_N_PRICE, x["b"][0].GetString());
+    element.insert(CCAPI_BEST_BID_N_SIZE,  x["b"][2].GetString());
+    element.insert(CCAPI_CLOSE_PRICE,      x["c"][0].GetString());
+    element.insert(CCAPI_CLOSE_VOLUME,     x["c"][1].GetString());
+    element.insert(CCAPI_VOLUME,           x["v"][0].GetString());
+    element.insert(CCAPI_VOLUME_24H,       x["v"][1].GetString());
+    element.insert(CCAPI_LOW_24H_PRICE,    x["l"][1].GetString());
+    element.insert(CCAPI_HIGH_24H_PRICE,   x["h"][1].GetString());
+    element.insert(CCAPI_OPEN_PRICE,       x["o"].GetString());
   }
 
   void convertTextMessageToMarketDataMessage(const Request& request, boost::beast::string_view textMessageView, const TimePoint& timeReceived, Event& event,
@@ -400,6 +420,21 @@ class MarketDataServiceKraken : public MarketDataService {
         for (auto itr = document["result"].MemberBegin(); itr != document["result"].MemberEnd(); ++itr) {
           Element element;
           this->extractInstrumentInfo(element, itr->value);
+          element.insert(CCAPI_INSTRUMENT, itr->name.GetString());
+          elementList.push_back(element);
+        }
+        message.setElementList(elementList);
+        message.setCorrelationIdList({request.getCorrelationId()});
+        event.addMessages({message});
+      } break;
+      case Request::Operation::GET_TICKERS: {
+        Message message;
+        message.setTimeReceived(timeReceived);
+        message.setType(this->requestOperationToMessageTypeMap.at(request.getOperation()));
+        std::vector<Element> elementList;
+        for (auto itr = document["result"].MemberBegin(); itr != document["result"].MemberEnd(); ++itr) {
+          Element element;
+          this->extractTickerInfo(element, itr->value);
           element.insert(CCAPI_INSTRUMENT, itr->name.GetString());
           elementList.push_back(element);
         }
