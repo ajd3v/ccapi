@@ -35,6 +35,13 @@ class ExecutionManagementServiceKraken : public ExecutionManagementService {
 #ifndef CCAPI_EXPOSE_INTERNAL
 
  protected:
+  // Nanosecond nonces. The base class uses microseconds; a key whose nonce watermark ever
+  // exceeds the microsecond scale (any other client using ns nonces — one diagnostic curl is
+  // enough) permanently locks microsecond clients out with EAPI:Invalid nonce. ns is
+  // Kraken-recommended practice and strictly increasing across both scales.
+  int64_t generateNonce(const TimePoint& now, int requestIndex = 0) {
+    return std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count() + requestIndex;
+  }
 #endif
 
   void pingOnApplicationLevel(std::shared_ptr<WsConnection> wsConnectionPtr, ErrorCode& ec) override {
