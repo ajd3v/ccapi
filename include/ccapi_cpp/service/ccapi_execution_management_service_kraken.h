@@ -210,10 +210,17 @@ class ExecutionManagementServiceKraken : public ExecutionManagementService {
         {CCAPI_EM_ORDER_STATUS, std::make_pair("status", JsonDataType::STRING)},
     };
     if (operation == Request::Operation::CREATE_ORDER) {
-      for (const auto& x : document["result"]["txid"].GetArray()) {
-        Element element;
-        element.insert(CCAPI_EM_ORDER_ID, x.GetString());
-        elementList.emplace_back(std::move(element));
+      // Kraken's AddOrder with validate=true returns only result.descr — NO txid (a dry-run
+      // creates nothing). Guard the member: emit no elements for a validate success instead of
+      // tripping rapidjson's assertion (which surfaced as a GENERIC_ERROR and silently swallowed
+      // every validate-rung CREATE response).
+      auto itTx = document["result"].FindMember("txid");
+      if (itTx != document["result"].MemberEnd() && itTx->value.IsArray()) {
+        for (const auto& x : itTx->value.GetArray()) {
+          Element element;
+          element.insert(CCAPI_EM_ORDER_ID, x.GetString());
+          elementList.emplace_back(std::move(element));
+        }
       }
     } else if (operation == Request::Operation::GET_ORDER || operation == Request::Operation::GET_OPEN_ORDERS) {
       const rj::Value& orders = operation == Request::Operation::GET_ORDER ? document["result"] : document["result"]["open"];
